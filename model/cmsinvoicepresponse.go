@@ -6,18 +6,19 @@ type InvoiceCMSListResponse struct {
 }
 
 type InvoiceListResponse struct {
-	ID int64 `json:"id"`
+	ID                            int64                         `json:"id"`
+	UserID                        int64                         `json:"user_id"`
+	Email                         string                        `json:"email"`
+	FirstName                     string                        `json:"first_name"`
+	LastName                      string                        `json:"last_name"`
+	AlegraTransactionListResponse AlegraTransactionListResponse `json:"alegra_transaction,omitempty"`
+	InUsd                         float64                       `json:"in_usd"`
 	//InvoiceDate           time.Time             `json:"invoice_date"`
-	UserID    int64  `json:"user_id"`
-	Email     string `json:"email"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
 	//CashBoxID int64  `json:"cash_box_id"`
 	//Responsable           string                `json:"responsable"`
 	//Account               string                `json:"account"`
 	//State                 string                `json:"state"`
 	//Support               string                `json:"support"`
-	AlegraTransactionListResponse AlegraTransactionListResponse `json:"alegra_transaction,omitempty"`
 	//IsSubscription        bool                  `json:"is_subscription"`
 	//IsRenewal             bool                  `json:"is_renewal"`
 	//Months                int64                 `json:"months"`
@@ -30,7 +31,6 @@ type InvoiceListResponse struct {
 	// ExchangeRate          int64                 `json:"exchange_rate"`
 	// OriginalPrice         int64                 `json:"original_price"`
 	// DiscountPrice         int64                 `json:"discount_price"`
-	InUsd float64 `json:"in_usd"`
 	// CreatedAt             time.Time             `json:"created_at"`
 	// Country               string                `json:"country"`
 	// AddressCountry        string                `json:"address_country"`
@@ -39,19 +39,38 @@ type InvoiceListResponse struct {
 }
 
 type AlegraTransactionListResponse struct {
+	InvoiceRelationListResponse InvoiceRelationListResponse `json:"invoice_relation"`
+	AlegraPaymentID             string                      `json:"alegra_payment_id"`
 	// Status              string              `json:"status"`
 	// CurrencyList        CurrencyList        `json:"currency"`
 	// Anotation           string              `json:"anotation"`
 	// Categories          []CategoryList      `json:"categories"`
 	// AlegraDataList      AlegraDataList      `json:"alegra_data"`
-	InvoiceRelationListResponse InvoiceRelationListResponse `json:"invoice_relation"`
-	AlegraPaymentID             string                      `json:"alegra_payment_id"`
+
 }
 
 type InvoiceRelationListResponse struct {
 	// CurrencyList  CurrencyList      `json:"currency"`
 	InvoiceItems []InvoiceItemListResponse `json:"invoice_items"`
 	// InvoiceHeaderList InvoiceHeaderList     `json:"invoice_header"`
+}
+type InvoiceItemListResponse struct {
+	OriginalPrice float64 `json:"original_price"`
+	// ID                  int64     `json:"id"`
+	// Quantity            int64     `json:"quantity"`
+	// CourseID            int64     `json:"course_id"`
+	// BasePrice           int64     `json:"base_price"`
+	// CreatedAt           time.Time `json:"created_at"`
+	// InvoiceID           int64     `json:"invoice_id"`
+	// UnitPrice           int64     `json:"unit_price"`
+	// UpdatedAt           time.Time `json:"updated_at"`
+	// CurrencyID          int64     `json:"currency_id"`
+	// ExchangeRate        int64     `json:"exchange_rate"`
+	// DiscountPrice       int64     `json:"discount_price"`
+
+	// IsSubscription      bool      `json:"is_subscription"`
+	// IsAttendingCourse   bool      `json:"is_attending_course"`
+	// ProfessorPercentage float64   `json:"professor_percentage"`
 }
 
 // type AlegraDataList struct {
@@ -118,21 +137,3 @@ type InvoiceRelationListResponse struct {
 // 	DaysElapsed   int64 `json:"days_elapsed"`
 // 	SubjectsViews int64 `json:"subjects_views"`
 // }
-
-type InvoiceItemListResponse struct {
-	// ID                  int64     `json:"id"`
-	// Quantity            int64     `json:"quantity"`
-	// CourseID            int64     `json:"course_id"`
-	// BasePrice           int64     `json:"base_price"`
-	// CreatedAt           time.Time `json:"created_at"`
-	// InvoiceID           int64     `json:"invoice_id"`
-	// UnitPrice           int64     `json:"unit_price"`
-	// UpdatedAt           time.Time `json:"updated_at"`
-	// CurrencyID          int64     `json:"currency_id"`
-	// ExchangeRate        int64     `json:"exchange_rate"`
-	// DiscountPrice       int64     `json:"discount_price"`
-	OriginalPrice float64 `json:"original_price"`
-	// IsSubscription      bool      `json:"is_subscription"`
-	// IsAttendingCourse   bool      `json:"is_attending_course"`
-	// ProfessorPercentage float64   `json:"professor_percentage"`
-}
