@@ -13,8 +13,9 @@ import (
 	"strconv"
 )
 
+// Conciliation ejecuta la conciliación de facturas de CMS con facturas de Alegra en un rango de fechas determinado.
 func Conciliation(fecha string, config configuration.Configuration) {
-	facturasAlegra, err := alegra.QueryApiByteAlegraBankAll(fecha, config) //2024-08-16
+	facturasAlegra, err := alegra.QueryApiByteAlegraBankAll(fecha, config)
 	if err != nil {
 		log.Fatal("consultaApiAlegra():", err)
 	}
@@ -78,6 +79,7 @@ func findMissingInvoices(cmsMap map[any]model.InvoiceListResponse, alegraMap map
 	return notInCMS, notInAlegra
 }
 
+// unmarshalInvoices Decodificamos los archivos JSON
 func unmarshalInvoices(facturasCMS, facturasAlegra []byte) ([]model.InvoiceListResponse, []model.InvoiceAlegraResponse, error) {
 	var cmsInvoices []model.InvoiceListResponse
 	if err := json.Unmarshal(facturasCMS, &cmsInvoices); err != nil {
@@ -109,6 +111,7 @@ func createAlegraMap(alegraInvoices []model.InvoiceAlegraResponse) map[any]model
 	return alegraMap
 }
 
+// findPriceDiscrepancies Busca las facturas con discrepancias en el valor de la venta
 func findPriceDiscrepancies(cmsMap map[any]model.InvoiceListResponse, alegraInvoices []model.InvoiceAlegraResponse) ([]model.InvoiceAlegraResponse, []model.InvoiceListResponse) {
 	NotPriceAlegra := make([]model.InvoiceAlegraResponse, 0)
 	NotPriceCMS := make([]model.InvoiceListResponse, 0)
@@ -130,6 +133,7 @@ func findPriceDiscrepancies(cmsMap map[any]model.InvoiceListResponse, alegraInvo
 	return NotPriceAlegra, NotPriceCMS
 }
 
+// exportToCSV Exporta a un archivo CSV las facturas que están registradas en un solo sistema, ya sea en CMS o en Alegra, pero no en ambos.
 func exportToCSV(filename string, notInCMS []model.InvoiceAlegraResponse, notInAlegra []model.InvoiceListResponse) {
 	file, err := os.Create(filename)
 	if err != nil {
@@ -209,6 +213,7 @@ func exportToCSV(filename string, notInCMS []model.InvoiceAlegraResponse, notInA
 	fmt.Printf("Archivo CSV generado correctamente: %s\n", filename)
 }
 
+// exportToCSVAmount exporta las facturas con discrepancias
 func exportToCSVAmount(fileName string, notPriceCMS []model.InvoiceListResponse, notPriceAlegra []model.InvoiceAlegraResponse) error {
 
 	file, err := os.Create(fileName)

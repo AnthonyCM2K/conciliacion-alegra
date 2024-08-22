@@ -11,7 +11,7 @@ import (
 )
 
 // requestCMS consulta al endpoint de CMS
-func requestCMS2(fecha string, config configuration.Configuration) (*http.Response, error) {
+func requestCMS(fecha string, config configuration.Configuration) (*http.Response, error) {
 
 	client := &http.Client{}
 
@@ -55,7 +55,7 @@ func requestCMS2(fecha string, config configuration.Configuration) (*http.Respon
 
 func QueryApiByteCMSReports(fecha string, config configuration.Configuration) ([]byte, error) {
 
-	response, err := requestCMS2(fecha, config)
+	response, err := requestCMS(fecha, config)
 	if err != nil {
 		log.Fatal(err)
 	}
