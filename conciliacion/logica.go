@@ -36,17 +36,7 @@ func Conciliation(fecha string, config configuration.Configuration) {
 	// Aquí corregimos los tipos para que coincidan correctamente
 	notInCMS, notInAlegra := findMissingInvoices(cmsMap, alegraMap)
 
-	fmt.Printf("Facturas de Alegra no presentes en CMS: %+v\n", notInCMS)
-	fmt.Println("============================================================")
-	fmt.Printf("Facturas del CMS no presentes en Alegra: %+v\n", notInAlegra)
-	fmt.Println("============================================================")
-
 	NotPriceAlegra, NotPriceCMS := findPriceDiscrepancies(cmsMap, alegraInvoices)
-
-	fmt.Println("NotPriceAlegra: ", NotPriceAlegra)
-	fmt.Println("============================================================")
-	fmt.Println("NotPriceCMS: ", NotPriceCMS)
-	fmt.Println("============================================================")
 
 	fileName := fecha + "_not_in_CMS_or_Alegra.csv"
 	exportToCSV(fileName, notInCMS, notInAlegra)
