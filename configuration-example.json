@@ -1,0 +1,13 @@
+{
+  "cmsapi": {
+    "urlapicmsconsulta": "https://dev-billing.ed.team/api/v2/reports-admin/sales",
+    "urlapicmslogin": "https://dev-api.ed.team/api/v1/login",
+    "urlapicmslogin_email": "xxxxxxxxxxxx@gmail.com",
+    "urlapicmslogin_password": "************"
+  },
+  "alegraapi": {
+    "urlapialegra": "https://sandbox.alegra.com:26967",
+    "alegratoken": "bdfhhfgdgsvhdjshdj000x",
+    "alegraemail": "xxxxxxxxxxxxx@alegra.com"
+  }
+}
