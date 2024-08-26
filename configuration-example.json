@@ -1,0 +1,13 @@
+{
+  "cmsapi": {
+    "urlapicmsconsulta": "https://dev-billing.midominio.com/api/v2/reports-admin/sales",
+    "urlapicmslogin": "https://dev-api.midominio.com/api/v1/login",
+    "urlapicmslogin_email": "xxxxxxxxxxxx@gmail.com",
+    "urlapicmslogin_password": "************"
+  },
+  "alegraapi": {
+    "urlapialegra": "https://sandbox.alegra.com",
+    "alegratoken": "b000000000000000000000x",
+    "alegraemail": "xxxxxxxxxxxxx@alegra.com"
+  }
+}
