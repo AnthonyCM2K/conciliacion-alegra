@@ -1,0 +1,9 @@
+Source,CMS_ID,AlegraPayment_ID,Amount_Alegra,Amount_CMS,User_ID,Email_User,Banck_Acount,Detail,Total_Invoices,Total_Amount
+Invoice Alegra not in CMS,,5807,60.00,,,,Pasarela Paypal,,,
+Invoice CMS not in Alegra,262355,,,60.00,241608,lukcba@gmail.com,,,,
+,,,,,,,,Registers with discrepancies in Alegra:,1,60.00
+,,,,,,,,Registers with discrepancies in CMS:,1,60.00
+,,,,,,,,Total Alegra invoices consulted - 2024-08-19,20,921.04
+,,,,,,,,Total CMS invoices consulted - 2024-08-19,20,921.04
+,,,,,,,,,,
+,,,,,,,,Total Discrepancies in the amount:,0,

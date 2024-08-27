@@ -16,6 +16,7 @@ type InvoiceListResponse struct {
 	ExchangeRate                  float64                       `json:"exchange_rate"`
 	Currency                      string                        `json:"currency"`
 	PaymentMethod                 string                        `json:"payment_method"`
+	OriginalPrice                 float64                       `json:"original_price"`
 }
 
 type AlegraTransactionListResponse struct {

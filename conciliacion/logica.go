@@ -106,7 +106,8 @@ func findPriceDiscrepancies(cmsMap map[any]model.InvoiceListResponse, alegraInvo
 			continue
 		}
 
-		totalItemsAmount := math.Round((totalCMSInvoiceAmount(cms)/cms.ExchangeRate)*100) / 100
+		//totalItemsAmount := math.Round((totalCMSInvoiceAmount(cms)/cms.ExchangeRate)*100) / 100
+		totalItemsAmount := math.Round((cms.InUsd)*100) / 100
 
 		if totalItemsAmount != alegra.Amount {
 			NotPriceAlegra = append(NotPriceAlegra, alegra)
@@ -158,12 +159,21 @@ func exportToCSV(fecha string, filename string, notInCMS []model.InvoiceAlegraRe
 	// Escribir datos de `notInAlegra` (facturas en CMS no presentes en Alegra)
 	for _, invoice := range notInAlegra {
 		totalAmount := math.Round((totalCMSInvoiceAmount(invoice)/invoice.ExchangeRate)*100) / 100
+
+		// Operador ternario para decidir entre `totalAmount` y `invoice.InUsd`
+		amountToWrite := func() float64 {
+			if totalAmount == 0 {
+				return invoice.InUsd
+			}
+			return totalAmount
+		}()
+
 		err := writer.Write([]string{
 			"Invoice CMS not in Alegra",
 			strconv.FormatInt(invoice.ID, 10),
 			invoice.AlegraTransactionListResponse.AlegraPaymentID,
 			"",
-			fmt.Sprintf("%.2f", totalAmount), // No hay `Amount` en `InvoiceListResponse` pero calculamos suma Originalprice
+			fmt.Sprintf("%.2f", amountToWrite), // No hay `Amount` en `InvoiceListResponse` pero calculamos suma Originalprice
 			strconv.FormatInt(invoice.UserID, 10),
 			invoice.Email,
 			invoice.AlegraTransactionListResponse.AlegraDataList.BankAccount,
@@ -173,7 +183,7 @@ func exportToCSV(fecha string, filename string, notInCMS []model.InvoiceAlegraRe
 			log.Fatalf("Error al escribir datos de notInAlegra: %v", err)
 		}
 		totalCMS++
-		sumCMS += totalAmount
+		sumCMS += amountToWrite
 
 	}
 
@@ -231,7 +241,7 @@ func exportToCSV(fecha string, filename string, notInCMS []model.InvoiceAlegraRe
 			strconv.FormatInt(cmsAmount.ID, 10),
 			cmsAmount.AlegraTransactionListResponse.AlegraPaymentID,
 			fmt.Sprintf("%.2f", alegraAmount.Amount),
-			fmt.Sprintf("%.2f", math.Round((totalCMSInvoiceAmount(cmsAmount)/cmsAmount.ExchangeRate)*100)/100),
+			fmt.Sprintf("%.2f", math.Round((cmsAmount.InUsd)*100)/100),
 			strconv.FormatInt(cmsAmount.UserID, 10),
 			cmsAmount.Email,
 			cmsAmount.AlegraTransactionListResponse.AlegraDataList.BankAccount,

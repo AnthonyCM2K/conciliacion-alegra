@@ -1,0 +1,7 @@
+Source,CMS_ID,AlegraPayment_ID,Amount_Alegra,Amount_CMS,User_ID,Email_User,Banck_Acount,Detail,Total_Invoices,Total_Amount
+,,,,,,,,Registers with discrepancies in Alegra:,0,0.00
+,,,,,,,,Registers with discrepancies in CMS:,0,0.00
+,,,,,,,,Total Alegra invoices consulted - 2024-08-23,17,770.61
+,,,,,,,,Total CMS invoices consulted - 2024-08-23,17,770.62
+,,,,,,,,,,
+,,,,,,,,Total Discrepancies in the amount:,0,

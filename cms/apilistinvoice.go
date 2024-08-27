@@ -6,10 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math"
 	"net/http"
 	"net/url"
-	"strconv"
 )
 
 // requestCMS consulta al endpoint de CMS
@@ -54,7 +52,6 @@ func requestCMS(fecha string, config configuration.Configuration) (*http.Respons
 
 	return response, nil
 }
-
 func QueryApiByteCMSReports(fecha string, config configuration.Configuration) ([]byte, int, float64, error) {
 
 	response, err := requestCMS(fecha, config)
@@ -69,119 +66,73 @@ func QueryApiByteCMSReports(fecha string, config configuration.Configuration) ([
 	}
 
 	var resultInvoices []model.InvoiceListResponse
+	invoiceMap := make(map[int64]model.InvoiceListResponse) // Definir el mapa fuera del bucle
 	var totalInvoicesCMS int
 	var totalAmountCMS float64
 
-	// Crear un mapa para almacenar los IDs de facturas procesadas
-	processedInvoiceIDs := make(map[string]bool)
-
 	for _, invoice := range invoices.Data {
-		// Convertir el ID de la factura a string
-		invoiceIDStr := strconv.FormatInt(invoice.ID, 10)
+		if existingInvoice, exists := invoiceMap[invoice.ID]; exists {
+			// Si la factura ya existe, sumar InUsd y combinar los items
+			existingInvoice.InUsd += invoice.InUsd
+			totalAmountCMS += invoice.InUsd
 
-		// Verificar si la factura ya ha sido procesada
-		if _, exists := processedInvoiceIDs[invoiceIDStr]; !exists {
-			// Si no ha sido procesada, agregarla al mapa
-			processedInvoiceIDs[invoiceIDStr] = true
-
+			if invoice.AlegraTransactionList != nil && invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems != nil {
+				for _, item4 := range invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems {
+					invoiceItem := model.InvoiceItemListResponse{
+						OriginalPrice: item4.OriginalPrice,
+					}
+					existingInvoice.AlegraTransactionListResponse.InvoiceRelationListResponse.InvoiceItems = append(existingInvoice.AlegraTransactionListResponse.InvoiceRelationListResponse.InvoiceItems, invoiceItem)
+				}
+			}
+			invoiceMap[invoice.ID] = existingInvoice
+		} else {
+			// Si es una nueva factura, crearla
 			var invoiceItems []model.InvoiceItemListResponse
 
 			if invoice.AlegraTransactionList != nil && invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems != nil {
-				for _, itemPrice := range invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems {
+				for _, item4 := range invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems {
 					invoiceItem := model.InvoiceItemListResponse{
-						OriginalPrice: itemPrice.OriginalPrice,
+						OriginalPrice: item4.OriginalPrice,
 					}
 					invoiceItems = append(invoiceItems, invoiceItem)
-					// Sumar el OriginalPrice de este item al total general
-					totalAmountCMS += math.Round((itemPrice.OriginalPrice/invoice.ExchangeRate)*100) / 100
 				}
 			}
 
 			invoiceRelation := model.InvoiceRelationListResponse{
 				InvoiceItems: invoiceItems,
 			}
-			invoiceBanckAccount := model.AlegraDataListResponse{
-				BankAccount: invoice.AlegraTransactionList.AlegraDataList.BankAccount,
-			}
 
 			alegraTransaction := model.AlegraTransactionListResponse{
 				InvoiceRelationListResponse: invoiceRelation,
 				AlegraPaymentID:             invoice.AlegraTransactionList.AlegraPaymentID,
-				AlegraDataList:              invoiceBanckAccount,
 			}
 
 			newInvoice := model.InvoiceListResponse{
-				ID:            invoice.ID,
-				UserID:        int64(invoice.UserID),
-				Email:         invoice.Email,
-				FirstName:     invoice.FirstName,
-				LastName:      invoice.LastName,
-				ExchangeRate:  invoice.ExchangeRate,
-				Currency:      invoice.Currency,
-				PaymentMethod: invoice.PaymentMethod,
+				ID:           invoice.ID,
+				UserID:       int64(invoice.UserID),
+				Email:        invoice.Email,
+				FirstName:    invoice.FirstName,
+				LastName:     invoice.LastName,
+				InUsd:        invoice.InUsd,
+				ExchangeRate: invoice.ExchangeRate,
 
 				AlegraTransactionListResponse: alegraTransaction,
 			}
 
-			resultInvoices = append(resultInvoices, newInvoice)
-
-			// Incrementar el contador de facturas
-			totalInvoicesCMS++
+			invoiceMap[invoice.ID] = newInvoice
+			totalAmountCMS += invoice.InUsd
 		}
 	}
 
-	// for _, invoice := range invoices.Data {
-
-	// 	var invoiceItems []model.InvoiceItemListResponse
-
-	// 	if invoice.AlegraTransactionList != nil && invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems != nil {
-	// 		for _, itemPrice := range invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems {
-	// 			invoiceItem := model.InvoiceItemListResponse{
-	// 				OriginalPrice: itemPrice.OriginalPrice,
-	// 			}
-	// 			invoiceItems = append(invoiceItems, invoiceItem)
-	// 			// Sumar el OriginalPrice de este item al total general
-	// 			totalAmountCMS += math.Round((itemPrice.OriginalPrice/invoice.ExchangeRate)*100) / 100
-	// 		}
-	// 	}
-
-	// 	invoiceRelation := model.InvoiceRelationListResponse{
-	// 		InvoiceItems: invoiceItems,
-	// 	}
-	// 	invoiceBanckAccount := model.AlegraDataListResponse{
-	// 		BankAccount: invoice.AlegraTransactionList.AlegraDataList.BankAccount,
-	// 	}
-
-	// 	alegraTransaction := model.AlegraTransactionListResponse{
-	// 		InvoiceRelationListResponse: invoiceRelation,
-	// 		AlegraPaymentID:             invoice.AlegraTransactionList.AlegraPaymentID,
-	// 		AlegraDataList:              invoiceBanckAccount,
-	// 	}
-
-	// 	newInvoice := model.InvoiceListResponse{
-	// 		ID:            invoice.ID,
-	// 		UserID:        int64(invoice.UserID),
-	// 		Email:         invoice.Email,
-	// 		FirstName:     invoice.FirstName,
-	// 		LastName:      invoice.LastName,
-	// 		ExchangeRate:  invoice.ExchangeRate,
-	// 		Currency:      invoice.Currency,
-	// 		PaymentMethod: invoice.PaymentMethod,
-
-	// 		AlegraTransactionListResponse: alegraTransaction,
-	// 	}
-
-	// 	resultInvoices = append(resultInvoices, newInvoice)
-
-	// 	// Incrementar el contador de facturas
-	// 	totalInvoicesCMS++
-	// }
+	for _, invoice := range invoiceMap {
+		resultInvoices = append(resultInvoices, invoice)
+		totalInvoicesCMS++
+	}
 
 	jsonData, err := json.Marshal(resultInvoices)
 	if err != nil {
 		return nil, 0, 0, fmt.Errorf("error marshalling result invoices: %w", err)
 	}
-	//fmt.Println(string(jsonData))
-	return jsonData, totalInvoicesCMS, totalAmountCMS, nil
 
+	return jsonData, totalInvoicesCMS, totalAmountCMS, nil
 }

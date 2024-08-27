@@ -1,18 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"cmsalegra/conciliacion"
 	"cmsalegra/configuration"
 	"flag"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 )
-
-// "cmsalegra/conciliacion"
-// "cmsalegra/configuration"
-// "flag"
-// "fmt"
-// "time"
 
 func main() {
 	defaultFilePath := "configuration.json"
@@ -30,30 +27,24 @@ func main() {
 
 	config := configuration.NewConfiguration(filePath)
 
+	var date string
+
 	if *datePtr != "" {
-		_, err := time.Parse("2006-01-02", *datePtr)
-		if err != nil {
-			fmt.Println(`Error: La fecha proporcionada en el el flag -date no tiene el formato correcto. Debe ser YYYY-MM-DD ejemplo: -date="2024-08-19"`)
-			return
-		}
-
-		conciliacion.Conciliation(*datePtr, config)
+		date = *datePtr
 	} else {
-		fmt.Println(`Debe proporcionar el flag -date con una fecha en formato YYYY-MM-DD ejemplo: -date="2024-08-19"`)
+		// Solicitar input de la fecha si no se proporcionó el flag
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Por favor, ingrese la fecha en formato YYYY-MM-DD: ")
+		inputDate, _ := reader.ReadString('\n')
+		date = strings.TrimSpace(inputDate)
 	}
+
+	// Validar la fecha
+	_, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		fmt.Println(`Error: La fecha proporcionada no tiene el formato correcto. Debe ser YYYY-MM-DD ejemplo: 2024-08-19`)
+		return
+	}
+
+	conciliacion.Conciliation(date, config)
 }
-
-// func main() {
-// 	fecha := "2024-08-22"
-
-// 	config := configuration.NewConfiguration("configuration.json")
-
-// 	payments, err := alegra.QueryApiByteAlegra(fecha, config)
-// 	if err != nil {
-// 		fmt.Println("Error al obtener los pagos:", err)
-// 		return
-// 	}
-// 	// Aquí puedes usar la lista completa de pagos (payments) como desees
-// 	fmt.Println("Total de pagos obtenidos:", string(payments))
-// 	// Exportar o procesar la lista completa de pagos
-// }
