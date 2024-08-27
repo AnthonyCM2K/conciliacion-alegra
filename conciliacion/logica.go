@@ -107,9 +107,10 @@ func findPriceDiscrepancies(cmsMap map[any]model.InvoiceListResponse, alegraInvo
 		}
 
 		//totalItemsAmount := math.Round((totalCMSInvoiceAmount(cms)/cms.ExchangeRate)*100) / 100
-		totalItemsAmount := math.Round((cms.InUsd)*100) / 100
+		//tatolItemsAmount := math.Ceil((cms.OriginalPrice)*100) / 100
+		//totalItemsAmount := math.Round((cms.InUsd)*100) / 100
 
-		if totalItemsAmount != alegra.Amount {
+		if cms.InUsd != alegra.Amount {
 			NotPriceAlegra = append(NotPriceAlegra, alegra)
 			NotPriceCMS = append(NotPriceCMS, cms)
 		}
@@ -158,7 +159,7 @@ func exportToCSV(fecha string, filename string, notInCMS []model.InvoiceAlegraRe
 
 	// Escribir datos de `notInAlegra` (facturas en CMS no presentes en Alegra)
 	for _, invoice := range notInAlegra {
-		totalAmount := math.Round((totalCMSInvoiceAmount(invoice)/invoice.ExchangeRate)*100) / 100
+		totalAmount := (totalCMSInvoiceAmount(invoice) / invoice.ExchangeRate) //math.Round((totalCMSInvoiceAmount(invoice)/invoice.ExchangeRate)*100) / 100
 
 		// Operador ternario para decidir entre `totalAmount` y `invoice.InUsd`
 		amountToWrite := func() float64 {

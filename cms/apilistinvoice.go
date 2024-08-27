@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 )
@@ -71,10 +72,11 @@ func QueryApiByteCMSReports(fecha string, config configuration.Configuration) ([
 	var totalAmountCMS float64
 
 	for _, invoice := range invoices.Data {
+		roundPrice := math.Round(invoice.InUsd*100) / 100
 		if existingInvoice, exists := invoiceMap[invoice.ID]; exists {
 			// Si la factura ya existe, sumar InUsd y combinar los items
-			existingInvoice.InUsd += invoice.InUsd
-			totalAmountCMS += invoice.InUsd
+			existingInvoice.InUsd += roundPrice
+			totalAmountCMS += roundPrice
 
 			if invoice.AlegraTransactionList != nil && invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems != nil {
 				for _, item4 := range invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems {
@@ -85,43 +87,45 @@ func QueryApiByteCMSReports(fecha string, config configuration.Configuration) ([
 				}
 			}
 			invoiceMap[invoice.ID] = existingInvoice
-		} else {
-			// Si es una nueva factura, crearla
-			var invoiceItems []model.InvoiceItemListResponse
-
-			if invoice.AlegraTransactionList != nil && invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems != nil {
-				for _, item4 := range invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems {
-					invoiceItem := model.InvoiceItemListResponse{
-						OriginalPrice: item4.OriginalPrice,
-					}
-					invoiceItems = append(invoiceItems, invoiceItem)
-				}
-			}
-
-			invoiceRelation := model.InvoiceRelationListResponse{
-				InvoiceItems: invoiceItems,
-			}
-
-			alegraTransaction := model.AlegraTransactionListResponse{
-				InvoiceRelationListResponse: invoiceRelation,
-				AlegraPaymentID:             invoice.AlegraTransactionList.AlegraPaymentID,
-			}
-
-			newInvoice := model.InvoiceListResponse{
-				ID:           invoice.ID,
-				UserID:       int64(invoice.UserID),
-				Email:        invoice.Email,
-				FirstName:    invoice.FirstName,
-				LastName:     invoice.LastName,
-				InUsd:        invoice.InUsd,
-				ExchangeRate: invoice.ExchangeRate,
-
-				AlegraTransactionListResponse: alegraTransaction,
-			}
-
-			invoiceMap[invoice.ID] = newInvoice
-			totalAmountCMS += invoice.InUsd
+			continue
 		}
+		// Si es una nueva factura, crearla
+		var invoiceItems []model.InvoiceItemListResponse
+
+		if invoice.AlegraTransactionList != nil && invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems != nil {
+			for _, item4 := range invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems {
+				invoiceItem := model.InvoiceItemListResponse{
+					OriginalPrice: item4.OriginalPrice,
+				}
+				invoiceItems = append(invoiceItems, invoiceItem)
+			}
+		}
+
+		invoiceRelation := model.InvoiceRelationListResponse{
+			InvoiceItems: invoiceItems,
+		}
+
+		alegraTransaction := model.AlegraTransactionListResponse{
+			InvoiceRelationListResponse: invoiceRelation,
+			AlegraPaymentID:             invoice.AlegraTransactionList.AlegraPaymentID,
+		}
+
+		newInvoice := model.InvoiceListResponse{
+			ID:            invoice.ID,
+			UserID:        int64(invoice.UserID),
+			Email:         invoice.Email,
+			FirstName:     invoice.FirstName,
+			LastName:      invoice.LastName,
+			InUsd:         roundPrice,
+			ExchangeRate:  invoice.ExchangeRate,
+			OriginalPrice: invoice.OriginalPrice,
+
+			AlegraTransactionListResponse: alegraTransaction,
+		}
+
+		invoiceMap[invoice.ID] = newInvoice
+		totalAmountCMS += roundPrice
+
 	}
 
 	for _, invoice := range invoiceMap {
@@ -133,6 +137,8 @@ func QueryApiByteCMSReports(fecha string, config configuration.Configuration) ([
 	if err != nil {
 		return nil, 0, 0, fmt.Errorf("error marshalling result invoices: %w", err)
 	}
+
+	totalAmountCMS = math.Round((totalAmountCMS)*100) / 100
 
 	return jsonData, totalInvoicesCMS, totalAmountCMS, nil
 }

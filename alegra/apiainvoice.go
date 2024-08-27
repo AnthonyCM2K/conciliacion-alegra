@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -152,6 +153,8 @@ func QueryApiByteAlegra(fecha string, config configuration.Configuration) ([]byt
 	if err != nil {
 		return nil, 0, 0, fmt.Errorf("error marshalling result invoices: %w", err)
 	}
+
+	totalAmountAlegra = math.Round((totalAmountAlegra)*100) / 100
 
 	return jsonData, totalInvoicesAlegra, totalAmountAlegra, nil
 }
