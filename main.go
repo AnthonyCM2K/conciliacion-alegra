@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"cmsalegra/cms"
 	"cmsalegra/conciliacion"
 	"cmsalegra/configuration"
 	"flag"
@@ -46,5 +47,10 @@ func main() {
 		return
 	}
 
-	conciliacion.Conciliation(date, config)
+	clientCMS := &cms.DefaultCMSClient{}
+	api := &conciliacion.RealInvoiceAPI{}
+	err = conciliacion.Conciliation(date, config, api, clientCMS)
+	if err != nil {
+		fmt.Println(err)
+	}
 }

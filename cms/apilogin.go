@@ -10,7 +10,13 @@ import (
 	"net/http"
 )
 
-func ApiCMSLogin(config configuration.Configuration) (string, error) {
+type CMSClient interface {
+	ApiCMSLogin(config configuration.Configuration) (string, error)
+}
+
+type DefaultCMSClient struct{}
+
+func (d *DefaultCMSClient) ApiCMSLogin(config configuration.Configuration) (string, error) {
 
 	url := config.CMSApi.UrlApiCmsLogin
 	credentials := map[string]string{
@@ -30,7 +36,6 @@ func ApiCMSLogin(config configuration.Configuration) (string, error) {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	// Enviar la solicitud
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -39,20 +44,17 @@ func ApiCMSLogin(config configuration.Configuration) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	// Leer la respuesta
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	// Parsear la respuesta JSON para capturar el token
 	var result map[string]interface{}
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	// El token está bajo la clave "data" -> "token"
 	data, ok := result["data"].(map[string]interface{})
 	if !ok {
 		fmt.Println("Estructura de respuesta inesperada")

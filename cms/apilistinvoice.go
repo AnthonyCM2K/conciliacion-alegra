@@ -8,54 +8,32 @@ import (
 	"log"
 	"math"
 	"net/http"
-	"net/url"
 )
 
-// requestCMS consulta al endpoint de CMS
-func requestCMS(fecha string, config configuration.Configuration) (*http.Response, error) {
-
-	client := &http.Client{}
-
-	//Peticion de token para CMS
-	tokenCMS, err := ApiCMSLogin(config)
+func RequestCMS(fecha string, config configuration.Configuration, client CMSClient) (*http.Response, error) {
+	token, err := client.ApiCMSLogin(config)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	// Base URL
-	baseURL := config.CMSApi.UrlApiCmsConsulta
-
-	// Parámetros de consulta
-	params := url.Values{}
-	params.Add("begins", fecha)
-	params.Add("ends", fecha)
-
-	// Construir la URL completa con parámetros
-	fullURL := fmt.Sprintf("%s?%s", baseURL, params.Encode())
-
-	req, err := http.NewRequest("GET", fullURL, nil)
-
+	req, err := http.NewRequest("GET", config.CMSApi.UrlApiCmsConsulta, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
+		return nil, err
 	}
 
-	req.Header.Set("Authorization", "Bearer "+tokenCMS)
+	query := req.URL.Query()
+	query.Add("begins", fecha)
+	query.Add("ends", fecha)
+	req.URL.RawQuery = query.Encode()
 
-	response, err := client.Do(req)
+	req.Header.Set("Authorization", "Bearer "+token)
 
-	if err != nil {
-		return nil, fmt.Errorf("error making request: %w", err)
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", response.StatusCode)
-	}
-
-	return response, nil
+	clientHttp := &http.Client{}
+	return clientHttp.Do(req)
 }
-func QueryApiByteCMSReports(fecha string, config configuration.Configuration) ([]byte, int, float64, error) {
 
-	response, err := requestCMS(fecha, config)
+func QueryApiByteCMSReports(fecha string, config configuration.Configuration, client CMSClient) ([]byte, int, float64, error) {
+	response, err := RequestCMS(fecha, config, client)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -67,7 +45,7 @@ func QueryApiByteCMSReports(fecha string, config configuration.Configuration) ([
 	}
 
 	var resultInvoices []model.InvoiceListResponse
-	invoiceMap := make(map[int64]model.InvoiceListResponse) // Definir el mapa fuera del bucle
+	invoiceMap := make(map[int64]model.InvoiceListResponse)
 	var totalInvoicesCMS int
 	var totalAmountCMS float64
 
@@ -78,7 +56,7 @@ func QueryApiByteCMSReports(fecha string, config configuration.Configuration) ([
 			existingInvoice.InUsd += roundPrice
 			totalAmountCMS += roundPrice
 
-			if invoice.AlegraTransactionList != nil && invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems != nil {
+			if invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems != nil {
 				for _, item4 := range invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems {
 					invoiceItem := model.InvoiceItemListResponse{
 						OriginalPrice: item4.OriginalPrice,
@@ -92,7 +70,7 @@ func QueryApiByteCMSReports(fecha string, config configuration.Configuration) ([
 		// Si es una nueva factura, crearla
 		var invoiceItems []model.InvoiceItemListResponse
 
-		if invoice.AlegraTransactionList != nil && invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems != nil {
+		if invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems != nil {
 			for _, item4 := range invoice.AlegraTransactionList.InvoiceRelationList.InvoiceItems {
 				invoiceItem := model.InvoiceItemListResponse{
 					OriginalPrice: item4.OriginalPrice,

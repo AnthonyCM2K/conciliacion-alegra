@@ -1,8 +1,11 @@
 package model
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
-var Categories = []string{"5283", "5284", "5285", "5286", "5324", "5325", "5356", "5358", "5363"}
+var Categories = []string{"5283", "5284", "5285", "5286", "5324", "5325", "5356", "5358", "5363", "5369"}
 
 type FacturasAlegra struct {
 	Metadata Metadata `json:"metadata,omitempty"`
@@ -84,4 +87,8 @@ func (cd *CustomDate) UnmarshalJSON(b []byte) error {
 	}
 	*cd = CustomDate(t)
 	return nil
+}
+
+func (cd CustomDate) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Time(cd).Format("2006-01-02"))
 }

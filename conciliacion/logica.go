@@ -14,33 +14,50 @@ import (
 	"strconv"
 )
 
-// Conciliation ejecuta la conciliación de facturas de CMS con facturas de Alegra en un rango de fechas determinado.
-func Conciliation(fecha string, config configuration.Configuration) {
-	facturasAlegra, totalInvoicesAlegra, totalAmountAlegra, err := alegra.QueryApiByteAlegra(fecha, config)
+type InvoiceAPI interface {
+	QueryApiByteAlegra(fecha string, config configuration.Configuration) ([]byte, int, float64, error)
+	QueryApiByteCMSReports(fecha string, config configuration.Configuration, client cms.CMSClient) ([]byte, int, float64, error)
+}
+
+type RealInvoiceAPI struct{}
+
+func (r *RealInvoiceAPI) QueryApiByteAlegra(fecha string, config configuration.Configuration) ([]byte, int, float64, error) {
+	return alegra.QueryApiByteAlegra(fecha, config)
+}
+
+func (r *RealInvoiceAPI) QueryApiByteCMSReports(fecha string, config configuration.Configuration, client cms.CMSClient) ([]byte, int, float64, error) {
+	return cms.QueryApiByteCMSReports(fecha, config, client)
+}
+
+func Conciliation(fecha string, config configuration.Configuration, api InvoiceAPI, client cms.CMSClient) error {
+	facturasAlegra, totalInvoicesAlegra, totalAmountAlegra, err := api.QueryApiByteAlegra(fecha, config)
 	if err != nil {
-		log.Fatal("consultaApiAlegra():", err)
+		log.Printf("consultaApiAlegra(): %v", err)
+		return err
 	}
 
-	facturas, totalInvoicesCMS, totalAmountCMS, err := cms.QueryApiByteCMSReports(fecha, config)
+	facturas, totalInvoicesCMS, totalAmountCMS, err := api.QueryApiByteCMSReports(fecha, config, client)
 	if err != nil {
-		log.Fatal("consultaApiCMS():", err)
+		log.Printf("consultaApiCMS(): %v", err)
+		return err
 	}
 
 	cmsInvoices, alegraInvoices, err := unmarshalInvoices(facturas, facturasAlegra)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("unmarshalInvoices(): %v", err)
+		return err
 	}
 
 	cmsMap := createCMSMap(cmsInvoices)
 	alegraMap := createAlegraMap(alegraInvoices)
 
-	// Aquí corregimos los tipos para que coincidan correctamente
 	notInCMS, notInAlegra := findMissingInvoices(cmsMap, alegraMap)
-
 	NotPriceAlegra, NotPriceCMS := findPriceDiscrepancies(cmsMap, alegraInvoices)
 
 	fileName := fecha + "_Discrepancies_CMS_Alegra.csv"
 	exportToCSV(fecha, fileName, notInCMS, notInAlegra, NotPriceCMS, NotPriceAlegra, totalAmountAlegra, totalAmountCMS, totalInvoicesAlegra, totalInvoicesCMS)
+
+	return nil
 }
 
 // findMissingInvoices Cambiamos los tipos de los mapas para que sean consistentes
@@ -63,7 +80,6 @@ func findMissingInvoices(cmsMap map[any]model.InvoiceListResponse, alegraMap map
 	return notInCMS, notInAlegra
 }
 
-// unmarshalInvoices Decodificamos los archivos JSON
 func unmarshalInvoices(facturasCMS, facturasAlegra []byte) ([]model.InvoiceListResponse, []model.InvoiceAlegraResponse, error) {
 	var cmsInvoices []model.InvoiceListResponse
 	if err := json.Unmarshal(facturasCMS, &cmsInvoices); err != nil {
@@ -106,10 +122,6 @@ func findPriceDiscrepancies(cmsMap map[any]model.InvoiceListResponse, alegraInvo
 			continue
 		}
 
-		//totalItemsAmount := math.Round((totalCMSInvoiceAmount(cms)/cms.ExchangeRate)*100) / 100
-		//tatolItemsAmount := math.Ceil((cms.OriginalPrice)*100) / 100
-		//totalItemsAmount := math.Round((cms.InUsd)*100) / 100
-
 		if cms.InUsd != alegra.Amount {
 			NotPriceAlegra = append(NotPriceAlegra, alegra)
 			NotPriceCMS = append(NotPriceCMS, cms)
@@ -130,7 +142,6 @@ func exportToCSV(fecha string, filename string, notInCMS []model.InvoiceAlegraRe
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 
-	// Escribir el encabezado
 	err = writer.Write([]string{"Source", "CMS_ID", "AlegraPayment_ID", "Amount_Alegra", "Amount_CMS", "User_ID", "Email_User", "Banck_Acount", "Detail", "Total_Invoices", "Total_Amount"})
 	if err != nil {
 		log.Fatalf("Error al escribir el encabezado CSV: %v", err)
@@ -139,7 +150,6 @@ func exportToCSV(fecha string, filename string, notInCMS []model.InvoiceAlegraRe
 	var totalAlegra, totalCMS int
 	var sumAlegra, sumCMS float64
 
-	// Escribir datos de `notInCMS` (facturas en Alegra no presentes en CMS)
 	for _, invoice := range notInCMS {
 		err := writer.Write([]string{
 			"Invoice Alegra not in CMS",
@@ -157,9 +167,8 @@ func exportToCSV(fecha string, filename string, notInCMS []model.InvoiceAlegraRe
 		sumAlegra += invoice.Amount
 	}
 
-	// Escribir datos de `notInAlegra` (facturas en CMS no presentes en Alegra)
 	for _, invoice := range notInAlegra {
-		totalAmount := (totalCMSInvoiceAmount(invoice) / invoice.ExchangeRate) //math.Round((totalCMSInvoiceAmount(invoice)/invoice.ExchangeRate)*100) / 100
+		totalAmount := (totalCMSInvoiceAmount(invoice) / invoice.ExchangeRate)
 
 		// Operador ternario para decidir entre `totalAmount` y `invoice.InUsd`
 		amountToWrite := func() float64 {
@@ -188,7 +197,6 @@ func exportToCSV(fecha string, filename string, notInCMS []model.InvoiceAlegraRe
 
 	}
 
-	// Escribir los totales
 	err = writer.Write([]string{
 		"", "", "", "", "", "", "", "", "Registers with discrepancies in Alegra:",
 		strconv.Itoa(totalAlegra),
@@ -254,7 +262,6 @@ func exportToCSV(fecha string, filename string, notInCMS []model.InvoiceAlegraRe
 		}
 	}
 
-	// Escribir el total de discrepancias al final del archivo
 	totalDiscrepancies := len(notPriceCMS)
 	totalRecord := []string{
 		"", "", "", "", "", "", "", "", "Total Discrepancies in the amount:", strconv.Itoa(totalDiscrepancies), "",
@@ -266,8 +273,6 @@ func exportToCSV(fecha string, filename string, notInCMS []model.InvoiceAlegraRe
 
 	fmt.Printf("CSV file generated successfully: %s\n", filename)
 }
-
-// exportToCSVAmount exporta las facturas con discrepanci
 
 func totalCMSInvoiceAmount(cms model.InvoiceListResponse) float64 {
 	var total float64
